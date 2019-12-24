@@ -8,24 +8,31 @@ import gzip
 from hashlib import md5
 import sys
 import io
+from binascii import b2a_hex, a2b_hex
 sys.stdout = io.TextIOWrapper(sys.stdout.detach(), encoding='utf-8', line_buffering=True)
 
 def Encrypt(key:str, text:str) -> str:
     if len(key) < 32: key += ' ' * (32 - len(key))
     elif len(key) > 32: key = key[0:32]
+
+    if len(text) < 32: text += ' ' * (32 - len(text))
+    elif len(text) > 32: text = text[0:32]
     cipher = AES.new(bytes(key,encoding='utf-8'), AES.MODE_CBC, bytes(AES.block_size))
-    return str(gzip.decompress(bytes.strip(cipher.encrypt(base64.b64decode(text)))), encoding='utf-8')
+    return str(b2a_hex(gzip.compress(bytes.strip(cipher.encrypt(text)))), encoding='utf-8')
+
+def Decrypt(key:str, text:str) -> str:
+    if len(key) < 32:
+        key += ' ' * (32 - len(key))
+    elif len(key) > 32:
+        key = key[0:32]
+
+    btext = a2b_hex(text)
+    cipher = AES.new(bytes(key,encoding='utf-8'), AES.MODE_CBC, bytes(AES.block_size))
+    return str(gzip.decompress(bytes.strip(cipher.decrypt(btext))), encoding='utf-8')
 
 cipher_text = Encrypt("123","aaaaaa")
 
 print('encrypt:'+cipher_text)
-'''
-# Encryption
-encryption_suite = AES.new('This is a key123', AES.MODE_CBC, 'This is an IV456')
-cipher_text = encryption_suite.encrypt("A really secret message. Not for prying eyes.")
 
-Encrypt('This is a key123')
-# Decryption
-decryption_suite = AES.new('This is a key123', AES.MODE_CBC, 'This is an IV456')
-plain_text = decryption_suite.decrypt(cipher_text)
-'''
+ret = Decrypt("123",cipher_text)
+print("ret:",ret)
